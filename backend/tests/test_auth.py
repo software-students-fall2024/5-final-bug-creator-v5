@@ -57,3 +57,52 @@ def test_login(client):
     data = json.loads(response.data)
     assert 'data' in data
     assert 'access_token' in data['data']
+
+def test_register_invalid_data(client):
+    response = client.post('/api/auth/register', 
+        json={
+            'username': '',
+            'email': 'invalid_email',
+            'password': '123'
+        },
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
+def test_login_invalid_credentials(client):
+    response = client.post('/api/auth/login',
+        json={
+            'email': 'nonexistent@example.com',
+            'password': 'wrongpassword'
+        },
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 401
+    data = json.loads(response.data)
+    assert 'message' in data
+
+def test_duplicate_registration(client):
+    first_response = client.post('/api/auth/register', 
+        json={
+            'username': 'testuser1',
+            'email': 'test1@example.com',
+            'password': 'password123'
+        },
+        headers={'Content-Type': 'application/json'}
+    )
+    assert first_response.status_code == 201
+    
+    response = client.post('/api/auth/register', 
+        json={
+            'username': 'testuser1',
+            'email': 'test1@example.com',
+            'password': 'password123'
+        },
+        headers={'Content-Type': 'application/json'}
+    )
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+ 

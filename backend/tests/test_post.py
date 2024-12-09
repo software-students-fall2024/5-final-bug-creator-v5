@@ -190,5 +190,87 @@ def test_comment_post(client, auth_token, test_post):
         json={"content": "Test Comment"},
         headers={"Authorization": f"Bearer {auth_token}"},
     )
-
     assert response.status_code == 201
+    data = json.loads(response.data)
+    assert 'message' in data
+
+
+def test_create_post_invalid_data(client, auth_token):
+    response = client.post(
+        "/api/posts",
+        json={
+            "title": "",
+            "content": "",
+            "tags": []
+        },
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
+
+def test_get_posts_pagination(client, auth_token):
+    for i in range(15):
+        client.post(
+            "/api/posts",
+            json={
+                "title": f"Test Post {i}",
+                "content": f"Content {i}",
+                "tags": ["test"]
+            },
+            headers={"Authorization": f"Bearer {auth_token}"}
+        )
+
+    response = client.get("/api/posts?page=1&per_page=10")
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert len(data['data']) == 10
+    assert data['total'] > 10
+    assert 'page' in data
+
+    response = client.get("/api/posts?page=2&per_page=10")
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    assert len(data['data']) == 5
+
+
+def test_get_posts_with_invalid_pagination(client):
+    response = client.get("/api/posts?page=1&per_page=0")
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
+
+def test_update_post_invalid_data(client, auth_token, test_post):
+    response = client.put(
+        f"/api/posts/{test_post}",
+        json={
+            "title": "",
+            "content": "",
+            "tags": []
+        },
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
+
+def test_invalid_post_id_format(client, auth_token):
+    response = client.get("/api/posts/invalid_id")
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
+
+def test_comment_invalid_data(client, auth_token, test_post):
+    response = client.post(
+        f"/api/posts/{test_post}",
+        json={"content": ""},
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 400
+    data = json.loads(response.data)
+    assert 'message' in data
+
